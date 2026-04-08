@@ -1,80 +1,157 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Quick Start"
+description: "Get from zero to your first file transfer in under two minutes."
 ---
 
-## Get started in three steps
+Follow these steps to install WebTransfer Lite, configure it, and transfer your first file.
 
-Get your documentation site running locally and make your first customization.
+<Steps>
+  <Step title="Clone or download the project">
+    Clone the repository to your machine:
 
-### Step 1: Set up your local environment
+    ```bash
+    git clone https://github.com/Michinded/webtransfer-lite.git
+    cd webtransfer-lite
+    ```
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    Or download the source archive from GitHub and extract it.
+  </Step>
 
-### Step 2: Deploy your changes
+  <Step title="Install dependencies">
+    Install all required packages using pnpm:
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    ```bash
+    pnpm install
+    ```
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+    <Note>
+      pnpm and Node.js 18 or later are required. If you don't have pnpm, install it with `npm install -g pnpm`.
+    </Note>
+  </Step>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+  <Step title="Initialize the environment">
+    Generate your `.env` file with a secure, randomly generated `JWT_SECRET`:
 
-### Step 3: Go live
+    ```bash
+    pnpm run init
+    ```
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    This copies `.env.example` to `.env` and fills in a 128-character hex secret. You only need to run this once.
 
-## Next steps
+    The resulting `.env` file looks like this:
 
-Now that you have your docs running, explore these key features:
+    ```env
+    JWT_SECRET=<generated secret>
+    PORT=3000
+    UPLOADS_DIR=uploads
+    SESSION_HOURS=2
+    MAX_FILE_SIZE_MB=0
+    ```
 
-<CardGroup cols={2}>
+    You can edit `PORT`, `UPLOADS_DIR`, `SESSION_HOURS`, and `MAX_FILE_SIZE_MB` to suit your needs. Do not change `JWT_SECRET` — if you need a new one, delete `.env` and run `pnpm run init` again.
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+    <Tip>
+      Set `MAX_FILE_SIZE_MB` to a positive number to cap individual upload sizes and protect disk space. Leave it at `0` for no limit — files are always streamed to disk regardless, so large transfers won't exhaust RAM.
+    </Tip>
+  </Step>
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+  <Step title="(Optional) Validate the environment">
+    Before starting the server, confirm that your `.env` values are valid:
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+    ```bash
+    pnpm run check
+    ```
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+    The check script verifies that `JWT_SECRET` is set and long enough, `PORT` is a valid integer between 1024 and 65535, `SESSION_HOURS` is at least 0.5, `MAX_FILE_SIZE_MB` is a non-negative number, and `UPLOADS_DIR` is writable (creating it if it doesn't exist).
 
-</CardGroup>
+    A passing run looks like:
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+    ```
+      ✓  .env found
+      ✓  JWT_SECRET set (128 chars)
+      ✓  PORT=3000
+      ✓  SESSION_HOURS=2
+      !  MAX_FILE_SIZE_MB=0 — no file size limit enforced
+      ✓  UPLOADS_DIR writable (/path/to/webtransfer-lite/uploads)
+
+      All checks passed. Ready to run pnpm start.
+    ```
+
+    Fix any errors reported before proceeding.
+  </Step>
+
+  <Step title="Start the server">
+    Start WebTransfer Lite:
+
+    ```bash
+    pnpm start
+    ```
+
+    After a moment, the terminal displays your connection details and a QR code:
+
+    ```
+    ──────────────────────────────────
+       WebTransfer Lite
+    ──────────────────────────────────
+      URL      : http://192.168.1.x:3000
+      Password : AB3X7K
+      Session  : 2h
+    ──────────────────────────────────
+
+      Scan to connect (QR = instant access):
+      [ QR code ]
+    ```
+
+    The server is now live on your local network. The session lasts for the duration configured in `SESSION_HOURS` (default: 2 hours). When the session expires, the server shuts down automatically and frees the port.
+
+    <Warning>
+      Each `pnpm start` generates a new random password. Share only the URL and password with people on your local network whom you trust.
+    </Warning>
+  </Step>
+
+  <Step title="Connect from your device">
+    **From a PC on the same network:**
+    1. Open the URL shown in the terminal (e.g., `http://192.168.1.x:3000`) in any browser.
+    2. Enter the password displayed in the terminal.
+    3. You now have access to the file transfer interface.
+
+    **From a mobile device:**
+    1. Open your phone's camera or a QR scanner app.
+    2. Point it at the QR code in the terminal.
+    3. Tap the link. The pre-signed token in the URL grants instant access — no password needed.
+
+    <Tip>
+      The QR code contains a pre-signed JWT, so scanning it is faster than entering the password manually. Use it whenever you're connecting from a phone or tablet.
+    </Tip>
+  </Step>
+
+  <Step title="Transfer your first file">
+    In the browser interface:
+
+    - **Upload:** drag and drop files onto the upload area, or click to select them. Files land in the `UPLOADS_DIR` directory on the server machine.
+    - **Download:** click any listed file to download it to your device.
+    - **Delete:** remove files you no longer need from the interface.
+
+    If you upload a file whose name already exists, the server automatically renames the new file with a timestamp suffix — for example, `photo.png` becomes `photo-1712345678901.png` — so no existing file is overwritten.
+  </Step>
+</Steps>
+
+## Development mode
+
+If you are modifying the server code, use `pnpm run dev` instead of `pnpm start`:
+
+```bash
+pnpm run dev
+```
+
+This starts the server with `nodemon`, which automatically restarts it whenever you save a file. Not intended for production use.
+
+## What happens when the session expires
+
+When `SESSION_HOURS` elapses, the server prints a message and exits:
+
+```
+  Session expired. Server shutting down.
+```
+
+The port is freed immediately. To start a new session, run `pnpm start` again. A new password and QR code are generated each time.

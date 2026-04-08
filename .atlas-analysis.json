@@ -1,0 +1,70 @@
+{
+  "projectType": "general",
+  "projectName": "WebTransfer Lite",
+  "projectDescription": "A lightweight Node.js server for transferring files over a local network, secured with JWT authentication and accessible via QR code or password.",
+  "theme": "luma",
+  "primaryColor": "#2563EB",
+  "lightColor": "#EFF6FF",
+  "darkColor": "#1E3A8A",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/environment",
+              "configuration/uploads"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/connecting",
+              "guides/file-management",
+              "guides/security"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/overview",
+              "api/authentication",
+              "api/files"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "JWT-based authentication with auto-expiring sessions",
+    "QR code for instant mobile access without password",
+    "Random password generated on each server start",
+    "Automatic server shutdown when session expires",
+    "Streaming file uploads directly to disk (no RAM saturation)",
+    "Configurable file size limits and upload directory",
+    "Duplicate file name handling with timestamp suffix",
+    "Cross-platform path support (macOS, Linux, Windows)"
+  ],
+  "publicApiSurface": [
+    "POST /api/auth — Exchange password for JWT token",
+    "GET /api/files — List available files with size and modified date",
+    "POST /api/files/upload — Upload one or more files (multipart/form-data)",
+    "GET /api/files/download/:filename — Download a file (supports ?token= query param)",
+    "DELETE /api/files/:filename — Delete a file"
+  ]
+}

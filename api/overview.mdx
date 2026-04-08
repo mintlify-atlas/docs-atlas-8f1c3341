@@ -1,0 +1,95 @@
+---
+title: 'API Overview'
+description: 'REST API reference for WebTransfer Lite — base URL, authentication, endpoints, and error shapes.'
+---
+
+WebTransfer Lite exposes a REST API over HTTP on your local network. You can use it to authenticate, list, upload, download, and delete files programmatically from any HTTP client on the same LAN.
+
+## Base URL
+
+```
+http://<LAN-IP>:<PORT>
+```
+
+For example: `http://192.168.1.x:3000`
+
+The server prints the exact base URL to the terminal when it starts.
+
+<Note>
+  All URLs are HTTP, not HTTPS. Only use this API on trusted local networks — traffic is not encrypted in transit.
+</Note>
+
+## Authentication
+
+All file endpoints require a valid JWT passed as a `Bearer` token in the `Authorization` header:
+
+```
+Authorization: Bearer <token>
+```
+
+Obtain a token by calling `POST /api/auth` with the session password shown in the terminal. Downloads also accept the token as a `?token=<token>` query parameter, which is useful for embedding direct links.
+
+See [Authentication](/api/authentication) for the full token flow.
+
+## Endpoints
+
+| Method | Path | Auth required | Description |
+|--------|------|---------------|-------------|
+| `POST` | `/api/auth` | No | Exchange the session password for a JWT |
+| `GET` | `/api/files` | Yes | List all uploaded files |
+| `POST` | `/api/files/upload` | Yes | Upload one or more files |
+| `GET` | `/api/files/download/:filename` | Yes* | Download a file |
+| `DELETE` | `/api/files/:filename` | Yes | Delete a file |
+
+\* Downloads also accept `?token=<token>` as a query parameter instead of the `Authorization` header.
+
+## Error responses
+
+All errors return JSON with an `error` field. Common shapes:
+
+| Status | Body | When |
+|--------|------|------|
+| `401 Unauthorized` | `{ "error": "Unauthorized" }` | No token provided |
+| `401 Unauthorized` | `{ "error": "Invalid token" }` | Token signature is invalid |
+| `401 Unauthorized` | `{ "error": "Session expired" }` | Token has expired |
+| `400 Bad Request` | `{ "error": "No files received" }` | Upload request contained no files |
+| `404 Not Found` | `{ "error": "File not found" }` | Requested filename does not exist |
+| `413 Payload Too Large` | `{ "error": "File too large. Maximum allowed: X MB" }` | File exceeds `MAX_FILE_SIZE_MB` |
+
+## Full flow example
+
+The following example shows the three-step flow: get a token, list files, then download one.
+
+<CodeGroup>
+
+```bash Step 1 — get a token
+curl -X POST http://192.168.1.x:3000/api/auth \
+  -H "Content-Type: application/json" \
+  -d '{"password": "AB3X7K"}'
+# → {"token":"eyJhbGci..."}
+```
+
+```bash Step 2 — list files
+curl http://192.168.1.x:3000/api/files \
+  -H "Authorization: Bearer eyJhbGci..."
+# → [{"name":"report.pdf","size":204800,"modified":"2024-04-05T10:23:45.123Z"}]
+```
+
+```bash Step 3 — download a file
+curl http://192.168.1.x:3000/api/files/download/report.pdf \
+  -H "Authorization: Bearer eyJhbGci..." \
+  -O
+```
+
+</CodeGroup>
+
+## Explore the API
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api/authentication">
+    Get a JWT from the session password and learn how to use it in requests.
+  </Card>
+  <Card title="Files API" icon="file" href="/api/files">
+    List, upload, download, and delete files via the REST API.
+  </Card>
+</CardGroup>

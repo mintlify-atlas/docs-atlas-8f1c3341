@@ -1,0 +1,112 @@
+---
+title: 'Authentication'
+description: 'Exchange the session password for a JWT and use it in API requests.'
+---
+
+WebTransfer Lite uses JWT-based authentication. The flow has two steps: obtain a token with the session password, then include that token in every file API request.
+
+## Step 1 — get a token
+
+Send the session password to `POST /api/auth`. The password is printed to the terminal when the server starts (e.g., `AB3X7K`).
+
+**Method:** `POST`  
+**Path:** `/api/auth`  
+**Auth required:** No
+
+### Request body
+
+<ParamField body="password" type="string" required>
+  The session password displayed in the terminal on server start.
+</ParamField>
+
+### Response
+
+<ResponseField name="token" type="string" required>
+  A signed JWT. Valid for `SESSION_HOURS` hours (default: 2 hours, minimum: 0.5 hours). Use this value in the `Authorization` header for all file API requests.
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+
+```bash Request
+curl -X POST http://192.168.1.x:3000/api/auth \
+  -H "Content-Type: application/json" \
+  -d '{"password": "AB3X7K"}'
+```
+
+```json 200 — success
+{"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}
+```
+
+```json 401 — wrong password
+{"error":"Invalid password"}
+```
+
+</CodeGroup>
+
+The token payload is `{ authorized: true }` and is signed with the server's `JWT_SECRET`. The token expires after the same number of hours as the session (`SESSION_HOURS`).
+
+## Step 2 — use the token
+
+Include the token in every request to a file endpoint.
+
+### Authorization header (recommended)
+
+Add `Authorization: Bearer <token>` to the request headers:
+
+```bash
+curl http://192.168.1.x:3000/api/files \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+### Query parameter (downloads only)
+
+For download URLs — such as direct links in HTML or shared with other apps — append `?token=<token>` to the URL instead:
+
+```bash
+curl "http://192.168.1.x:3000/api/files/download/report.pdf?token=eyJhbGci..." -O
+```
+
+<Tip>
+  The query parameter form is useful when you need a self-contained download URL that can be opened in a browser or embedded in an `<a href>` tag.
+</Tip>
+
+### Expired tokens
+
+When a token expires, all file endpoints return:
+
+```json
+{"error":"Session expired"}
+```
+
+<Note>
+  Token expiry coincides with server session expiry — when the JWT expires, the server has also shut down. To transfer files again, restart the server with `pnpm start`. A fresh password, QR code, and token are generated each time.
+</Note>
+
+## QR code tokens
+
+When the server starts, it prints a QR code to the terminal. Scanning the code grants instant access to the web UI without entering the password.
+
+The QR code encodes a URL with a pre-signed token:
+
+```
+http://<ip>:<port>/?token=<jwt>
+```
+
+This token:
+
+- Has the same expiry as the session (`SESSION_HOURS`)
+- Carries the same `{ authorized: true }` payload
+- Can be extracted from the URL and used directly in API calls
+
+```bash
+# Extract the token from the QR URL and call the API
+TOKEN="eyJhbGci..."
+curl http://192.168.1.x:3000/api/files \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+<Note>
+  The QR token and the password-derived token are functionally identical — both grant the same level of access for the same duration.
+</Note>

@@ -1,0 +1,201 @@
+---
+title: 'Files API'
+description: 'List, upload, download, and delete files via the WebTransfer Lite REST API.'
+---
+
+All file endpoints require a valid JWT. Pass it as `Authorization: Bearer <token>` in the request header. Downloads also accept `?token=<token>` as a query parameter.
+
+---
+
+## GET /api/files — list files
+
+Returns all files in the uploads directory, sorted by modified date (newest first). Hidden files (names starting with `.`) are excluded.
+
+**Method:** `GET`  
+**Path:** `/api/files`  
+**Auth required:** Yes
+
+### Response
+
+Returns a JSON array of file objects.
+
+<ResponseField name="name" type="string" required>
+  The filename.
+</ResponseField>
+
+<ResponseField name="size" type="number" required>
+  File size in bytes.
+</ResponseField>
+
+<ResponseField name="modified" type="string" required>
+  Last-modified timestamp from the filesystem (`stat.mtime`), in ISO 8601 format.
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+
+```bash Request
+curl http://192.168.1.x:3000/api/files \
+  -H "Authorization: Bearer <token>"
+```
+
+```json 200 — success
+[
+  { "name": "report.pdf", "size": 204800, "modified": "2024-04-05T10:23:45.123Z" },
+  { "name": "photo.png", "size": 1048576, "modified": "2024-04-05T09:12:00.000Z" }
+]
+```
+
+</CodeGroup>
+
+---
+
+## POST /api/files/upload — upload files
+
+Upload one or more files in a single request using `multipart/form-data`.
+
+**Method:** `POST`  
+**Path:** `/api/files/upload`  
+**Auth required:** Yes  
+**Content-Type:** `multipart/form-data`
+
+### Request
+
+<ParamField body="files" type="file[]" required>
+  One or more files to upload. Use the field name `files` for each file part. Multiple files can be included in a single request.
+</ParamField>
+
+If a file with the same name already exists, it is automatically renamed to `{base}-{timestamp}{ext}` (e.g., `report-1712315025000.pdf`) rather than overwriting.
+
+### Response
+
+<ResponseField name="uploaded" type="object[]" required>
+  Array of objects describing each successfully uploaded file.
+
+  <Expandable title="properties">
+    <ResponseField name="name" type="string" required>
+      The name the file was saved as (may differ from the original name if a duplicate was detected).
+    </ResponseField>
+    <ResponseField name="size" type="number" required>
+      File size in bytes.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+
+```bash Request — multiple files
+curl -X POST http://192.168.1.x:3000/api/files/upload \
+  -H "Authorization: Bearer <token>" \
+  -F "files=@/path/to/file1.txt" \
+  -F "files=@/path/to/file2.pdf"
+```
+
+```json 200 — success
+{
+  "uploaded": [
+    { "name": "file1.txt", "size": 1024 },
+    { "name": "file2.pdf", "size": 204800 }
+  ]
+}
+```
+
+```json 400 — no files sent
+{"error":"No files received"}
+```
+
+```json 413 — file too large
+{"error":"File too large. Maximum allowed: 50 MB"}
+```
+
+</CodeGroup>
+
+The 413 error is returned when a file exceeds the `MAX_FILE_SIZE_MB` environment variable. If `MAX_FILE_SIZE_MB` is not set (or is `0`), there is no size limit.
+
+---
+
+## GET /api/files/download/:filename — download a file
+
+Download a single file by name. The server responds with the file as a binary attachment (`Content-Disposition: attachment`).
+
+**Method:** `GET`  
+**Path:** `/api/files/download/:filename`  
+**Auth required:** Yes — `Authorization: Bearer <token>` header **or** `?token=<token>` query parameter
+
+### Path parameters
+
+<ParamField path="filename" type="string" required>
+  The name of the file to download. Must match a filename returned by `GET /api/files`.
+</ParamField>
+
+### Example
+
+<CodeGroup>
+
+```bash Authorization header
+curl http://192.168.1.x:3000/api/files/download/report.pdf \
+  -H "Authorization: Bearer <token>" \
+  -O
+```
+
+```bash Query parameter
+curl "http://192.168.1.x:3000/api/files/download/report.pdf?token=<token>" -O
+```
+
+```json 404 — file not found
+{"error":"File not found"}
+```
+
+</CodeGroup>
+
+<Tip>
+  The query parameter form is useful for embedding direct download links in HTML (`<a href="...">`) or sharing URLs with other apps that cannot set custom headers.
+</Tip>
+
+---
+
+## DELETE /api/files/:filename — delete a file
+
+Permanently delete a file from the uploads directory.
+
+**Method:** `DELETE`  
+**Path:** `/api/files/:filename`  
+**Auth required:** Yes
+
+### Path parameters
+
+<ParamField path="filename" type="string" required>
+  The name of the file to delete. Must match a filename returned by `GET /api/files`.
+</ParamField>
+
+### Response
+
+<ResponseField name="deleted" type="string" required>
+  The name of the file that was deleted.
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+
+```bash Request
+curl -X DELETE http://192.168.1.x:3000/api/files/report.pdf \
+  -H "Authorization: Bearer <token>"
+```
+
+```json 200 — success
+{"deleted":"report.pdf"}
+```
+
+```json 404 — file not found
+{"error":"File not found"}
+```
+
+</CodeGroup>
+
+<Warning>
+  Deletion is permanent. There is no recycle bin or recovery mechanism — once deleted, the file cannot be restored.
+</Warning>

@@ -1,0 +1,118 @@
+---
+title: "Upload directory"
+description: "Configure where WebTransfer Lite stores uploaded files using the UPLOADS_DIR environment variable."
+---
+
+The `UPLOADS_DIR` environment variable controls where uploaded files are saved on the host machine. It accepts any absolute or relative path and works on Linux, macOS, and Windows.
+
+## Automatic directory creation
+
+You do not need to create the directory in advance. On startup, the server runs:
+
+```javascript index.js
+const UPLOADS_DIR = path.resolve(process.env.UPLOADS_DIR || 'uploads');
+
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+```
+
+If the directory does not exist, it is created automatically — including any intermediate parent directories — before the server begins accepting connections.
+
+## Path resolution
+
+All paths (absolute and relative) are resolved using `path.resolve()`, which:
+
+- Resolves relative paths from the current working directory (the project root when started with `pnpm start`).
+- Handles platform-specific separators on Windows (`\` and `/`).
+- Supports UNC network paths on Windows (`\\server\share\...`).
+
+## Path examples
+
+<Tabs>
+  <Tab title="Linux / macOS">
+    Absolute path to a user directory:
+
+    ```env
+    UPLOADS_DIR=/home/user/transfers
+    ```
+
+    Path on an external or mounted volume:
+
+    ```env
+    UPLOADS_DIR=/mnt/nas/webtransfer
+    ```
+  </Tab>
+  <Tab title="Windows">
+    Absolute path using a drive letter:
+
+    ```env
+    UPLOADS_DIR=C:\Users\YourName\transfers
+    ```
+
+    UNC network path:
+
+    ```env
+    UPLOADS_DIR=\\server\share\transfers
+    ```
+  </Tab>
+  <Tab title="Relative">
+    Relative to the project root:
+
+    ```env
+    UPLOADS_DIR=uploads
+    ```
+
+    One level above the project root:
+
+    ```env
+    UPLOADS_DIR=../shared-files
+    ```
+  </Tab>
+</Tabs>
+
+## Duplicate file handling
+
+If a file with the same name already exists in the upload directory, the incoming file is not overwritten. Instead, it is automatically renamed with a millisecond timestamp appended before the extension:
+
+```
+photo.png  →  photo-1712345678901.png
+```
+
+This behaviour is implemented in `src/routes/files.js`:
+
+```javascript src/routes/files.js
+filename: (req, file, cb) => {
+  const ext = path.extname(file.originalname);
+  const base = path.basename(file.originalname, ext);
+  const target = path.join(uploadsDir(), file.originalname);
+
+  if (fs.existsSync(target)) {
+    cb(null, `${base}-${Date.now()}${ext}`);
+  } else {
+    cb(null, file.originalname);
+  }
+},
+```
+
+No existing file is ever overwritten.
+
+## Permissions
+
+<Warning>
+  The directory must be writable by the user running the server process. If the path exists but is not writable, the server will fail to save uploads and `pnpm run check` will report an error.
+</Warning>
+
+<Tip>
+  Run `pnpm run check` before starting the server. The check script attempts to create the directory and verifies write access, reporting the resolved absolute path so you can confirm it points to the intended location.
+
+  ```bash
+  pnpm run check
+  ```
+
+  A passing result looks like:
+
+  ```
+    ✓  UPLOADS_DIR writable (/home/user/webtransfer-lite/uploads)
+  ```
+</Tip>

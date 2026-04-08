@@ -1,0 +1,152 @@
+---
+title: "Managing files"
+description: "Upload, download, delete, and list files through the WebTransfer Lite web UI and REST API."
+---
+
+Once you are connected, the web UI presents an upload zone and a file list. All file operations are also available through the REST API using a Bearer token.
+
+## Uploading files
+
+<Tabs>
+  <Tab title="Web UI">
+    Drag one or more files onto the upload zone, or click the zone to open the file picker. Multiple files can be selected at once.
+
+    An upload progress bar appears while the transfer is in progress, showing the current percentage and file name(s).
+
+    Files are streamed directly to disk as they arrive, so large uploads do not exhaust RAM on the server.
+  </Tab>
+  <Tab title="API">
+    Send a `multipart/form-data` POST request with the field name `files`. Multiple files can be included in a single request.
+
+    ```bash
+    curl -X POST http://192.168.1.x:3000/api/files/upload \
+      -H "Authorization: Bearer <token>" \
+      -F "files=@photo.png" \
+      -F "files=@document.pdf"
+    ```
+
+    A successful response lists each uploaded file by its stored name and size:
+
+    ```json
+    {
+      "uploaded": [
+        { "name": "photo.png", "size": 204800 },
+        { "name": "document.pdf", "size": 512000 }
+      ]
+    }
+    ```
+
+    If `MAX_FILE_SIZE_MB` is configured and a file exceeds that limit, the server returns `413` with an error message:
+
+    ```json
+    { "error": "File too large. Maximum allowed: 50 MB" }
+    ```
+  </Tab>
+</Tabs>
+
+## Duplicate file handling
+
+If a file with the same name already exists on the server, the incoming file is renamed automatically — the original is never overwritten. The new name follows this format:
+
+```
+{base}-{timestamp}{ext}
+```
+
+The timestamp is milliseconds since the Unix epoch (`Date.now()`). For example:
+
+| Original name | Stored name |
+|---|---|
+| `photo.png` | `photo-1712345678901.png` |
+| `report.pdf` | `report-1712345678901.pdf` |
+| `archive.zip` | `archive-1712345678901.zip` |
+
+The renamed file name is returned in the upload response so you always know what was stored.
+
+## Downloading files
+
+<Tabs>
+  <Tab title="Web UI">
+    Click the download icon next to any file in the list. The browser triggers a standard file download.
+  </Tab>
+  <Tab title="API">
+    Send a GET request with your token in the `Authorization` header:
+
+    ```bash
+    curl -O http://192.168.1.x:3000/api/files/download/photo.png \
+      -H "Authorization: Bearer <token>"
+    ```
+
+    You can also append the token as a query parameter. This is useful for embedding direct links or opening files in a new browser tab:
+
+    ```
+    http://192.168.1.x:3000/api/files/download/photo.png?token=<jwt>
+    ```
+
+    If the file does not exist, the server returns `404`:
+
+    ```json
+    { "error": "File not found" }
+    ```
+  </Tab>
+</Tabs>
+
+## Deleting files
+
+<Warning>
+  Deletion is permanent. There is no recycle bin or undo. Verify you have a copy of the file before deleting it.
+</Warning>
+
+<Tabs>
+  <Tab title="Web UI">
+    Click the trash icon next to the file you want to remove. The file list refreshes automatically after deletion.
+  </Tab>
+  <Tab title="API">
+    Send a DELETE request for the specific filename:
+
+    ```bash
+    curl -X DELETE http://192.168.1.x:3000/api/files/photo.png \
+      -H "Authorization: Bearer <token>"
+    ```
+
+    A successful response confirms the deleted filename:
+
+    ```json
+    { "deleted": "photo.png" }
+    ```
+  </Tab>
+</Tabs>
+
+## Listing files
+
+<Tabs>
+  <Tab title="Web UI">
+    The file list on the main screen updates automatically after uploads and deletions. Files are displayed with their name, size, and relative modification time (for example, "3m ago" or "2h ago").
+  </Tab>
+  <Tab title="API">
+    Retrieve the full file list sorted by modification date, newest first:
+
+    ```bash
+    curl http://192.168.1.x:3000/api/files \
+      -H "Authorization: Bearer <token>"
+    ```
+
+    Each entry includes the file name, size in bytes, and last-modified timestamp:
+
+    ```json
+    [
+      {
+        "name": "report.pdf",
+        "size": 512000,
+        "modified": "2024-04-05T14:23:01.000Z"
+      },
+      {
+        "name": "photo.png",
+        "size": 204800,
+        "modified": "2024-04-05T13:10:45.000Z"
+      }
+    ]
+    ```
+
+    Hidden files (names starting with `.`) are excluded from the listing.
+  </Tab>
+</Tabs>

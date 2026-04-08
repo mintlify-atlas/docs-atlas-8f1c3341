@@ -1,0 +1,79 @@
+---
+title: "Introduction"
+description: "WebTransfer Lite is a lightweight local file transfer server for LAN networks, secured with JWT authentication and accessible via password or QR code."
+---
+
+WebTransfer Lite is a Node.js server that runs on your machine and lets you transfer files between any devices on the same local network. Open the URL on a PC, scan the QR code on your phone, and move files in either direction — no cloud, no accounts, no software to install on the receiving device.
+
+<Info>
+  WebTransfer Lite is designed for local network use only. Do not expose the server port to the public internet.
+</Info>
+
+## Key features
+
+<CardGroup cols={2}>
+  <Card title="JWT authentication" icon="shield-halved">
+    Every session is secured with a signed JWT. The password printed in the terminal exchanges for a token that authorizes all subsequent requests.
+  </Card>
+  <Card title="QR code access" icon="qrcode">
+    A QR code containing a pre-signed token is printed to the terminal on startup. Scanning it grants instant mobile access — no password entry needed.
+  </Card>
+  <Card title="Streaming uploads" icon="arrow-up-from-bracket">
+    Files are streamed directly to disk using `multer`. Large transfers never saturate RAM, regardless of file size.
+  </Card>
+  <Card title="Auto-shutdown" icon="clock">
+    The server exits automatically when the session expires. The port is freed and your machine is left unexposed — no manual cleanup needed.
+  </Card>
+  <Card title="Duplicate file handling" icon="copy">
+    Uploading a file whose name already exists automatically renames the incoming file with a timestamp suffix, so no existing file is overwritten.
+  </Card>
+  <Card title="Cross-platform upload directory" icon="folder-open">
+    `UPLOADS_DIR` accepts any absolute or relative path and works on macOS, Linux, and Windows — including `C:\Users\...` and UNC paths like `\\server\share`.
+  </Card>
+</CardGroup>
+
+## How it works
+
+When you run `pnpm start`, the server:
+
+1. Reads your `.env` file for configuration (port, session duration, upload directory, file size limit).
+2. Detects your machine's LAN IP address automatically.
+3. Generates a random one-time password for the session.
+4. Signs a JWT containing that password's authorization and embeds it in a QR code URL.
+5. Prints your URL, password, session duration, and the QR code to the terminal.
+6. Starts an Express server and listens for connections on your LAN.
+7. Schedules an automatic shutdown when the session expires.
+
+**From a PC on the same network:** open the URL in a browser and enter the password to receive a JWT token, which is used for all file operations.
+
+**From a mobile device:** scan the QR code. The pre-signed token in the URL grants instant access — no password entry required.
+
+<Tip>
+  The QR code token and the password-based token have the same expiry. Both grant the same level of access to the file transfer interface.
+</Tip>
+
+## Project structure
+
+```
+index.js              # Entry point — starts the server, prints URL, password, and QR code
+scripts/
+  init.js             # Generates .env from .env.example with a random JWT_SECRET
+  check.js            # Validates .env values before starting
+src/
+  middleware/auth.js  # JWT verification middleware for protected routes
+  routes/
+    auth.js           # POST /api/auth — exchanges password for a JWT
+    files.js          # GET | POST | DELETE /api/files — file listing, upload, download, delete
+public/
+  index.html          # Web UI served to browsers
+uploads/              # Uploaded files land here (gitignored)
+```
+
+## Requirements
+
+- **Node.js 18+**
+- **pnpm**
+
+<Note>
+  On startup the server attempts to free the configured port using `lsof` (a Unix utility available on macOS and Linux). On Windows, `lsof` is not available and the command fails silently — the server still starts normally, but any existing process occupying the port must be stopped manually.
+</Note>

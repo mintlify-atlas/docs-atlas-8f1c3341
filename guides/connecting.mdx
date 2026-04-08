@@ -1,0 +1,74 @@
+---
+title: "Connecting to the server"
+description: "Two ways to connect to a running WebTransfer Lite session: PC browser and mobile QR code scan."
+---
+
+When the server starts, the terminal displays a URL, a 6-character password, and a QR code. Use whichever method suits your device.
+
+<Note>
+  All connecting devices must be on the same local network (LAN) as the machine running the server. No internet connection is required or used.
+</Note>
+
+## Connecting from a PC
+
+<Steps>
+  <Step title="Open the URL in a browser">
+    Navigate to the URL shown in the terminal output — for example:
+
+    ```
+    http://192.168.1.x:3000
+    ```
+
+    The login screen prompts you for a password.
+  </Step>
+
+  <Step title="Enter the password">
+    Type the 6-character password shown in the terminal:
+
+    ```
+    Password : AB3X7K
+    ```
+
+    The password is a randomly generated mix of uppercase letters and digits. The character set is `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`, which intentionally excludes visually ambiguous characters such as `0`, `O`, `1`, and `I`.
+
+    Press **Connect**. On success, the file manager loads immediately.
+  </Step>
+</Steps>
+
+## Connecting from a mobile device
+
+<Steps>
+  <Step title="Open your camera or QR scanner">
+    Use your phone's built-in camera app or any QR scanner application.
+  </Step>
+
+  <Step title="Scan the QR code in the terminal">
+    Point it at the QR code printed in the terminal output. The QR encodes a URL with a pre-signed JWT token embedded as a query parameter:
+
+    ```
+    http://192.168.1.x:3000/?token=<jwt>
+    ```
+  </Step>
+
+  <Step title="Tap the link">
+    The browser opens and you are logged in instantly — no password entry required. The pre-signed token grants the same level of access as entering the password manually.
+  </Step>
+</Steps>
+
+<Tip>
+  Use the QR code whenever connecting from a phone or tablet. It is faster than typing the password on a small keyboard and provides equivalent access.
+</Tip>
+
+## Session expiry
+
+Each server run has a fixed session duration controlled by the `SESSION_HOURS` environment variable (minimum 0.5 hours). When the session ends:
+
+- The server prints `Session expired. Server shutting down.` and exits via `process.exit(0)`.
+- The port is freed immediately — the machine is no longer exposed.
+- Any request made after the server exits will receive a connection refused error rather than an HTTP response.
+
+To start a new session, run `pnpm start` again. A fresh password, QR code, and token are generated each time.
+
+<Warning>
+  Do not share the terminal output — including the URL, password, and QR code — with anyone you do not trust. Anyone who obtains these can connect to the server and access or delete your files for the remainder of the session.
+</Warning>

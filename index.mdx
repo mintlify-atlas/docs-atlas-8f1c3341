@@ -1,97 +1,55 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "WebTransfer Lite"
+description: "Lightweight local file transfer over your LAN — secured with JWT, accessible via password or QR code."
 ---
 
-## Setting up
+WebTransfer Lite is a lightweight Node.js server that lets you transfer files between devices on the same local network. Start the server, scan the QR code from your phone, and drag files back and forth — no cloud, no accounts, no installation on the receiving device.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Set up and run your first transfer in under two minutes
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Configuration" icon="sliders" href="/configuration/environment">
+    Customize ports, session duration, file size limits, and upload directory
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Connecting Devices" icon="mobile" href="/guides/connecting">
+    Connect from a PC browser or scan the QR code from any mobile device
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="API Reference" icon="code" href="/api/overview">
+    Integrate directly with the REST API using JWT authentication
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## How it works
 
-Everything you need to create world-class documentation.
+<Steps>
+  <Step title="Install and initialize">
+    Clone the repo, install dependencies, and run `pnpm run init` to generate a secure JWT secret in your `.env` file.
+  </Step>
+  <Step title="Start the server">
+    Run `pnpm start`. The terminal displays your LAN URL, a one-time password, and a QR code.
+  </Step>
+  <Step title="Connect from any device">
+    Open the URL on a PC and enter the password, or scan the QR code from a mobile device for instant access — no password required.
+  </Step>
+  <Step title="Transfer files">
+    Upload files from your device, browse and download files from other devices. The session expires automatically when the configured time elapses.
+  </Step>
+</Steps>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+## Key features
 
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<CardGroup cols={2}>
+  <Card title="JWT authentication" icon="shield-halved">
+    Every session is secured with a signed JWT. Tokens expire automatically, and the server shuts down when the session ends.
+  </Card>
+  <Card title="QR code access" icon="qrcode">
+    A QR code containing a pre-signed token is printed to the terminal. Scanning it grants instant mobile access.
+  </Card>
+  <Card title="Streaming uploads" icon="arrow-up-from-bracket">
+    Files are streamed directly to disk — large uploads never saturate RAM regardless of file size.
+  </Card>
+  <Card title="Auto-shutdown" icon="clock">
+    The server exits automatically when the session expires, freeing the port and leaving the machine unexposed.
+  </Card>
+</CardGroup>
